@@ -28,6 +28,7 @@ theory
 microscale
 mesoscale
 verification
+solver_scaling
 abaqus
 legacy
 ```

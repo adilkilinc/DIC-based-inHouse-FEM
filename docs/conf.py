@@ -8,7 +8,7 @@ from datetime import date
 # Make the source folders importable, so autodoc can find them if it is ever
 # enabled. The scripts are plain modules rather than an installed package.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-for _folder in ("solver", "abaqus", "legacy"):
+for _folder in ("microscale/solver", "microscale/abaqus", "mesoscale/solver", "mesoscale/runners", "legacy"):
     sys.path.insert(0, os.path.join(_ROOT, _folder))
 
 project = "DIC-based in-house FEM"
