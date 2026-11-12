@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "package": "vincent_followup_20261014",
+  "frozen_campaign": "final_locked_campaign_20260929",
+  "frozen_campaign_json_sha256": "3490bf3fa73e5fcc6f8825a02f5c9ccf1fcd3a2b673c5bcc26dc327262e7677b",
+  "note": "Added to the frozen campaign configuration at run time (common.campaign_config); the frozen files are read only. Maps of the new materials are written by this package under 0_identification/.",
+  "iterations": {
+    "key": "a100_it120",
+    "alpha": 100,
+    "dis_iterations": 120,
+    "production_key": "a100_it240",
+    "same_reference_variant": "off_stress:offset:2e-4:0:load:stress",
+    "own_reference_variant": "off_stress_own:offset:2e-4:0:load:stress",
+    "own_reference_out_dir": "0_identification/dataset1_own",
+    "lock_check_reference": "2_old_experiment/Microscale/dic_comparison/1_codes/dic_lock_check.json: 120 -> 240 iterations lowers the mean equivalent strain by 2.7, 5.7 and 6.3 % at frames 14, 28 and 42 (2000-pixel crop)"
+  },
+  "power_rule": {
+    "variant_dir": "kpow",
+    "exponent_source": "datasets.<dataset>.n_exp of the frozen campaign (0.4164)",
+    "sources": {"dataset1": "a100_it240", "dataset2": "a80_it240"},
+    "rule": "K_j / K = (SLOP_REF / s_j)^n on the pixels kept by the linear rule (flag 0, ratio in [0, 3]); the pixels flagged by the linear rule are filled with the same neighbour fill"
+  },
+  "materials": {
+    "dataset1": {
+      "B_it120": {"id_key": "a100_it120", "uv_key": "a100_it120"},
+      "B_it120own": {"id_key": "a100_it120", "uv_key": "a100_it120", "variant_dir": "off_stress_own"},
+      "hom_it120": {"yield_constant_mpa": 169.71, "K_constant_mpa": 461.8, "uv_key": "a100_it120"},
+      "B_kpow": {"id_key": "a100_it240", "variant_dir": "kpow"}
+    },
+    "dataset2": {
+      "a80_kpow": {"source_key": "a80_it240", "id_key": "a80_it240", "variant_dir": "kpow"}
+    }
+  },
+  "case_families": [
+    {"stage": "iterations", "dataset": "dataset1", "materials": ["B_it120", "B_it120own", "hom_it120"], "factors": [10], "n_inc": 20, "table": "g200", "after": "identify120"},
+    {"stage": "power_rule", "dataset": "dataset1", "materials": ["B_kpow"], "factors": [10], "n_inc": 20, "table": "g200", "after": "kpow"},
+    {"stage": "power_rule", "dataset": "dataset2", "materials": ["a80_kpow"], "factors": [10], "n_inc": 20, "table": "g200", "suffix": "crop", "after": "kpow"},
+    {"stage": "power_rule_full", "dataset": "dataset2", "materials": ["a80_kpow"], "factors": [1], "n_inc": 20, "table": "g200", "suffix": "crop", "after": "kpow", "optional": true},
+    {"stage": "power_rule_full", "dataset": "dataset1", "materials": ["B_kpow"], "factors": [1], "n_inc": 20, "table": "g200", "ref_force_tol": 1e-06, "after": "kpow", "optional": true}
+  ],
+  "reference_cases": {
+    "iterations": {"identified": "dataset1_B_f10", "homogeneous": "dataset1_homogeneous_f10"},
+    "power_rule": {"dataset1": "dataset1_B_f10", "dataset2": "dataset2_a80_f10_crop",
+                   "dataset1_full": "dataset1_B_f01", "dataset2_full": "dataset2_a80_f01_crop"},
+    "homogeneous": {"dataset1": "dataset1_homogeneous_f10", "dataset2": "dataset2_homogeneous_f10_crop"}
+  },
+  "gate_tolerance": 6e-4
+}

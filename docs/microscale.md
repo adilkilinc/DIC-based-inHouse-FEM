@@ -1,6 +1,6 @@
-# In-house solver
+# Microscale — pixel solver
 
-`solver/fem_pixel.py` is a pure-Python finite-element solver written as a
+`microscale/solver/fem_pixel.py` is a pure-Python finite-element solver written as a
 drop-in replacement for Abaqus in DIC-driven, pixel-wise heterogeneous
 plasticity problems. It takes the same inputs the Abaqus path would receive —
 measured boundary displacements plus per-element yield and hardening maps — and
@@ -67,8 +67,16 @@ inside `solver/` or add that folder to `sys.path`.
 | `result['S']` | `(nx, ny, 3)` | element stress, `[s11, s22, s12]` |
 | `result['E']` | `(nx, ny, 3)` | element strain, `[e11, e22, g12]` |
 | `result['PEEQ']` | `(nx, ny)` | equivalent plastic strain |
+| `result['PE']` | `(nx, ny, 3)` | plastic strain, `[pe11, pe22, pe12]` |
 | `result['U']` | `(nx+1, ny+1, 2)` | nodal displacement |
-| `result['RF']` | — | nodal reaction forces on the prescribed edges |
+| `result['RF']` | `(nx+1, ny+1, 2)` | nodal reaction forces on the prescribed edges |
+
+Every snapshot in `result['frames']` carries the same set, `RF` and `PE`
+included, so a reaction-force history needs no re-solve.
+
+The result also carries the run diagnostics — `n_inc`, `n_nr`, `n_cutback`,
+`n_res_growth`, `wall_s` and `log_file` — which are the same counters written to
+the run log.
 
 ### Verification
 
@@ -78,6 +86,18 @@ closed-form solution, and reports the error against it:
 ```bash
 python fem_pixel.py
 ```
+
+The comparison against Abaqus/Standard — field agreement, five window sizes and
+cost — is in [Verification](verification.md). The formulation itself, including
+the closed-form return mapping and the consistent tangent, is in
+[Formulation](theory.md).
+
+### Run logs
+
+Every run mirrors its Newton history to `./fem_logs/`, even when
+`verbose=False`. `FEM_LOG_DIR` or `FEM_LOG_FILE` relocates it, `FEM_LOG=0`
+turns it off. One file per process, appended across calls — a tile driver
+produces one log rather than hundreds.
 
 ### Load history
 
@@ -98,7 +118,7 @@ field — then stitch the tiles back together, either by keeping each tile's
 non-overlapping core or by tent-weighted blending across the overlap.
 
 The overlap, or *padding*, has to be wide enough that each tile's own artificial
-boundary has decayed before the region you keep begins. `solver/seam_metrics.py`
+boundary has decayed before the region you keep begins. `microscale/solver/seam_metrics.py`
 measures exactly that: given a stitched element-stress field, it computes the
 assembled nodal force-equilibrium residual at the tile interfaces and its decay
 with distance from them, so the required padding can be calibrated from

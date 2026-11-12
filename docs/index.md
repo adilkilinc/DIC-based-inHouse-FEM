@@ -14,8 +14,8 @@ The same problem can be solved two ways, which is the point of the repository:
 
 - **In Abaqus**, by generating an input file in which every pixel becomes an
   element carrying its own measured material properties.
-- **In the in-house solver**, which takes the identical inputs directly in
-  Python and needs no external solver or licence.
+- **In the in-house solvers**, which take the identical inputs directly in
+  Python and need no external solver or licence.
 
 The second was written against the first, so the Abaqus path is kept as the
 reference oracle rather than as a historical artefact.
@@ -24,18 +24,41 @@ reference oracle rather than as a historical artefact.
 :maxdepth: 2
 :caption: Contents
 
-solver
+theory
+microscale
+mesoscale
+verification
 abaqus
 legacy
 ```
+
+## Two scales
+
+The same formulation is solved on two discretisations, and the repository is
+laid out along that split.
+
+**Microscale** — one CPS4 element per DIC pixel, heterogeneity carried per
+pixel from the identified yield and hardening maps. Windows of 250k–560k
+elements; the full field is solved tile by tile.
+
+**Mesoscale** — an unstructured CPS3 grain mesh, heterogeneity carried per
+grain from the segmentation. 90k elements over 244 grains.
+
+Both are verified against Abaqus/Standard on the identical problem; see
+[Verification](verification.md).
 
 ## Repository layout
 
 | Folder | Contents |
 |---|---|
-| `solver/` | The in-house finite-element solver and its tiling diagnostic. |
-| `abaqus/` | Current Abaqus pipeline: `.inp` generation and ODB extraction. |
-| `legacy/` | The original DIC-to-Abaqus mesh generators, kept as first published. |
+| `microscale/solver/` | Pixel solver (`fem_pixel.py`) and the tiling diagnostic (`seam_metrics.py`). |
+| `microscale/abaqus/` | Abaqus pipeline: `.inp` generation and ODB extraction. |
+| `mesoscale/solver/` | Grain-resolved solver (`fem_tri.py`). |
+| `mesoscale/runners/` | Configuration, preprocessing, drivers, chains and self-tests. |
+| `mesoscale/abaqus/` | Mesoscale `.inp` generation, job submission and ODB export. |
+| `mesoscale/mesh/` | The two base meshes shipped with the repository. |
+| `campaign/` | Thesis cases: DIC, identification, power-law maps, pixel and regional runs. |
+| `legacy/` | The original DIC-to-Abaqus mesh generators and the first DIC and identification scripts. |
 | `docs/` | These pages. |
 
 ## The model

@@ -1,0 +1,242 @@
+{
+ "package": "d2_meso_20261006",
+ "note": "Dataset 2 mesoscale reconstruction on the optical partition of Q. Hu (twin-merged, 2615 grains) and its orientation subdivision (twin-resolved, 8665 regions) on the 1880 x 1700 analysis grid. Same rules as the locked Dataset 1 mesoscale cases: regional arithmetic means of the 4-neighbour-filled production maps, Hall-Petch yield of Hu (2025) with the macroscopic or identified K, homogeneous law with DIC or edge-mean boundaries, graded Ludwik table g200, 20 increments, locked meso solver.",
+ "hp_fit": {
+  "twins": [
+   86.0,
+   538.0
+  ],
+  "no_twins": [
+   74.0,
+   522.0
+  ]
+ },
+ "hp_note": "sigma_y = sigma0 + k d^-1/2, d = equivalent-circle diameter in um (Hu 2025, fitted on Dataset 1)",
+ "resources": {
+  "build": {
+   "cpus": 2,
+   "mem": "32G",
+   "time": "01:00:00"
+  },
+  "moderate": {
+   "cpus": 8,
+   "mem": "64G",
+   "time": "06:00:00"
+  },
+  "fine": {
+   "cpus": 16,
+   "mem": "128G",
+   "time": "12:00:00"
+  },
+  "analysis": {
+   "cpus": 8,
+   "mem": "48G",
+   "time": "04:00:00"
+  },
+  "partition": "32c3,24c3,bigmem"
+ },
+ "cases": [
+  {
+   "id": "id_mnt",
+   "group": "primary",
+   "mesh": "moderate_no_twins",
+   "law": "dic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "id_fnt",
+   "group": "primary",
+   "mesh": "fine_no_twins",
+   "law": "dic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "id_mt",
+   "group": "primary",
+   "mesh": "moderate_twins",
+   "law": "dic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "id_ft",
+   "group": "primary",
+   "mesh": "fine_twins",
+   "law": "dic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hp_mnt",
+   "group": "primary",
+   "mesh": "moderate_no_twins",
+   "law": "hp_kmacro",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hp_fnt",
+   "group": "primary",
+   "mesh": "fine_no_twins",
+   "law": "hp_kmacro",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hp_mt",
+   "group": "primary",
+   "mesh": "moderate_twins",
+   "law": "hp_kmacro",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hp_ft",
+   "group": "primary",
+   "mesh": "fine_twins",
+   "law": "hp_kmacro",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hyb_mnt",
+   "group": "primary",
+   "mesh": "moderate_no_twins",
+   "law": "hp_kdic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hyb_fnt",
+   "group": "primary",
+   "mesh": "fine_no_twins",
+   "law": "hp_kdic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hyb_mt",
+   "group": "primary",
+   "mesh": "moderate_twins",
+   "law": "hp_kdic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hyb_ft",
+   "group": "primary",
+   "mesh": "fine_twins",
+   "law": "hp_kdic",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "hom_dic_mnt",
+   "group": "boundary_control",
+   "mesh": "moderate_no_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "dic"
+  },
+  {
+   "id": "hom_dic_fnt",
+   "group": "boundary_control",
+   "mesh": "fine_no_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "dic"
+  },
+  {
+   "id": "hom_dic_mt",
+   "group": "boundary_control",
+   "mesh": "moderate_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "dic"
+  },
+  {
+   "id": "hom_dic_ft",
+   "group": "boundary_control",
+   "mesh": "fine_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "dic"
+  },
+  {
+   "id": "hom_edge_mnt",
+   "group": "boundary_control",
+   "mesh": "moderate_no_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "edge_mean"
+  },
+  {
+   "id": "hom_edge_fnt",
+   "group": "boundary_control",
+   "mesh": "fine_no_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "edge_mean"
+  },
+  {
+   "id": "hom_edge_mt",
+   "group": "boundary_control",
+   "mesh": "moderate_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "edge_mean"
+  },
+  {
+   "id": "hom_edge_ft",
+   "group": "boundary_control",
+   "mesh": "fine_twins",
+   "law": "homogeneous",
+   "space": "homog",
+   "bc": "edge_mean"
+  },
+  {
+   "id": "pixel_ft",
+   "group": "pixel_material_control",
+   "mesh": "fine_twins",
+   "law": "pixel",
+   "space": "element",
+   "bc": "dic"
+  },
+  {
+   "id": "idm_mt",
+   "group": "averaging_control",
+   "mesh": "moderate_twins",
+   "law": "dic_merged",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "idm_ft",
+   "group": "averaging_control",
+   "mesh": "fine_twins",
+   "law": "dic_merged",
+   "space": "hetero",
+   "bc": "dic"
+  },
+  {
+   "id": "id_mt_g500",
+   "group": "numerical_check",
+   "mesh": "moderate_twins",
+   "law": "dic",
+   "space": "hetero",
+   "bc": "dic",
+   "table": "g500"
+  },
+  {
+   "id": "id_mt_n40",
+   "group": "numerical_check",
+   "mesh": "moderate_twins",
+   "law": "dic",
+   "space": "hetero",
+   "bc": "dic",
+   "n_inc": 40
+  }
+ ]
+}

@@ -1,0 +1,915 @@
+{
+  "schema": 3,
+  "campaign": "final_locked_campaign_20260929",
+  "max_nr": 15,
+  "nr_tol": 1e-06,
+  "hardening_tables": {
+    "g200": {
+      "mode": "graded",
+      "n_table": 200,
+      "ep_first": 1e-06,
+      "ep_max": 1.0
+    },
+    "g500": {
+      "mode": "graded",
+      "n_table": 500,
+      "ep_first": 1e-07,
+      "ep_max": 1.0
+    }
+  },
+  "production_table": "g200",
+  "snapshot_fractions": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "smoke_coarse_elements": 64,
+  "acceptance": {
+    "global_percent_max": 0.5,
+    "field_rel_l2_percent_max": 1.0,
+    "peeq_table_fraction_max": 0.8
+  },
+  "identification": {
+    "offset": 0.0002,
+    "window_fractions": "0.11:0.80",
+    "window_note": "elastic line fitted over the frames carrying 0.11-0.80 sigma0 of machine stress, against the machine stress; onset at 0.02 % offset; yield = machine stress at the onset frame; K = SLOP_REF / plastic slope (02 rule), bounds [0,3], neighbour fill; SLOP_REF = plastic slope of the field-mean history of the production key by the same rule",
+    "out_dir": "0_identification",
+    "variant_dir": "off_stress",
+    "rule": "off_stress:offset:2e-4:0:load:stress",
+    "dataset1": {
+      "script": "identification/d1_identify.py",
+      "sbatch": "run_identify_d1.sbatch",
+      "keys": [
+        "a100_it240",
+        "a10_it240",
+        "a20_it240",
+        "a50_it240",
+        "a80_it240",
+        "a150_it240",
+        "a200_it240",
+        "a500_it240"
+      ],
+      "production_key": "a100_it240",
+      "production_extra_rules": [
+        "off_frame:offset:2e-4:0:load:frame",
+        "off_auto:offset:2e-4:0:auto:stress",
+        "off_1e4:offset:1e-4:0:load:stress",
+        "off_5e4:offset:5e-4:0:load:stress",
+        "off_m2:offset:2e-4:-2:load:stress",
+        "off_p2:offset:2e-4:2:load:stress"
+      ],
+      "final_frame": 42,
+      "code_dir_rel": "2_codes/identification",
+      "traction_rel": "1_experimental_data/Traction_1.csv",
+      "law_tolerance": "0.5:1.0",
+      "resources": {
+        "cpus": 16,
+        "mem": "64G",
+        "time": "06:00:00",
+        "partition": "32c3,24c3,bigmem"
+      }
+    },
+    "dataset2": {
+      "script": "identification/d2_identify.py",
+      "sbatch": "run_identify_d2.sbatch",
+      "keys": [
+        "a80_it240",
+        "a1_it240",
+        "a10_it240",
+        "a20_it240",
+        "a50_it240",
+        "a100_it240",
+        "a150_it240",
+        "a200_it240"
+      ],
+      "production_key": "a80_it240",
+      "production_extra_rules": [
+        "off_frame:offset:2e-4:0:load:frame",
+        "off_1e4:offset:1e-4:0:load:stress",
+        "off_5e4:offset:5e-4:0:load:stress",
+        "off_m2:offset:2e-4:-2:load:stress",
+        "off_p2:offset:2e-4:2:load:stress"
+      ],
+      "final_frame": 2295,
+      "new_work_rel": "..",
+      "resources": {
+        "cpus": 16,
+        "mem": "120G",
+        "time": "16:00:00",
+        "partition": "32c3,24c3,bigmem",
+        "fallback_partition": "bigmem"
+      }
+    }
+  },
+  "roots": {
+    "dataset1": {
+      "env": "OLD_EXPERIMENT_ROOT",
+      "local": "data/old_experiment",
+      "hpc": "data/old_experiment"
+    },
+    "dataset2": {
+      "env": "NEW_EXPERIMENT_ROOT",
+      "local": "data/new_experiment",
+      "hpc": "data/new_experiment"
+    }
+  },
+  "datasets": {
+    "dataset1": {
+      "source_shape": [
+        3600,
+        3100
+      ],
+      "pixel_size_um": 1.84,
+      "element_size_base": 0.001,
+      "E_mpa": 193397.86038269,
+      "nu": 0.3,
+      "K_scale_mpa": 461.8,
+      "n_exp": 0.4164,
+      "U": "2_data/disflow/a100_it240/U/U_42.npy",
+      "V": "2_data/disflow/a100_it240/V/V_42.npy",
+      "materials": {
+        "B": {
+          "id_key": "a100_it240"
+        },
+        "B_a10": {
+          "id_key": "a10_it240",
+          "uv_key": "a10_it240"
+        },
+        "B_a20": {
+          "id_key": "a20_it240",
+          "uv_key": "a20_it240"
+        },
+        "B_a50": {
+          "id_key": "a50_it240",
+          "uv_key": "a50_it240"
+        },
+        "B_a80": {
+          "id_key": "a80_it240",
+          "uv_key": "a80_it240"
+        },
+        "B_a150": {
+          "id_key": "a150_it240",
+          "uv_key": "a150_it240"
+        },
+        "B_a200": {
+          "id_key": "a200_it240",
+          "uv_key": "a200_it240"
+        },
+        "B_a500": {
+          "id_key": "a500_it240",
+          "uv_key": "a500_it240"
+        },
+        "B_censor255": {
+          "id_key": "a100_it240",
+          "censored_yield_mpa": 255.0
+        },
+        "B_censorEl": {
+          "id_key": "a100_it240",
+          "censored_yield_mpa": 5000.0
+        },
+        "B_Kmedian": {
+          "id_key": "a100_it240",
+          "K_flagged_to_median": true
+        },
+        "B_Kclip5": {
+          "id_key": "a100_it240",
+          "K_upper_bound": 5.0
+        },
+        "homogeneous": {
+          "yield_constant_mpa": 169.71,
+          "K_constant_mpa": 461.8
+        },
+        "B_autowin": {
+          "id_key": "a100_it240",
+          "variant_dir": "off_auto"
+        },
+        "B_frame": {
+          "id_key": "a100_it240",
+          "variant_dir": "off_frame"
+        },
+        "B_off1e4": {
+          "id_key": "a100_it240",
+          "variant_dir": "off_1e4"
+        },
+        "B_off5e4": {
+          "id_key": "a100_it240",
+          "variant_dir": "off_5e4"
+        },
+        "B_winm2": {
+          "id_key": "a100_it240",
+          "variant_dir": "off_m2"
+        },
+        "B_winp2": {
+          "id_key": "a100_it240",
+          "variant_dir": "off_p2"
+        }
+      },
+      "reference_copy_U": "1_experimental_data/reference_fields/a100_it240_U_42.npy",
+      "reference_copy_V": "1_experimental_data/reference_fields/a100_it240_V_42.npy",
+      "sigma0_mpa": 169.71,
+      "law_note": "additive Ludwik from the DIC field-mean history against the synchronised machine stress: sigma0 at 0.02 % equivalent plastic strain from the elastic line fitted to the same record (frames 5-18, the pixel rule), n fixed to 0.4164, K by least squares; E = 193.4 GPa measured with the extensometer on Dataset 2 (same plate), used as the elastic modulus of the FEM"
+    },
+    "dataset2": {
+      "source_shape": [
+        1880,
+        1705
+      ],
+      "pixel_size_um": 3.45,
+      "element_size_base": 0.001,
+      "E_mpa": 193397.86038269,
+      "nu": 0.3,
+      "K_scale_mpa": 332.8,
+      "n_exp": 0.4164,
+      "materials": {
+        "a50": {
+          "source_key": "a50_it240",
+          "id_key": "a50_it240"
+        },
+        "a80": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240"
+        },
+        "a100": {
+          "source_key": "a100_it240",
+          "id_key": "a100_it240"
+        },
+        "homogeneous": {
+          "source_key": "a80_it240",
+          "yield_constant_mpa": 172.3,
+          "K_constant_mpa": 332.8
+        },
+        "a80_frame": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "variant_dir": "off_frame"
+        },
+        "a1": {
+          "source_key": "a1_it240",
+          "id_key": "a1_it240"
+        },
+        "a10": {
+          "source_key": "a10_it240",
+          "id_key": "a10_it240"
+        },
+        "a20": {
+          "source_key": "a20_it240",
+          "id_key": "a20_it240"
+        },
+        "a150": {
+          "source_key": "a150_it240",
+          "id_key": "a150_it240"
+        },
+        "a200": {
+          "source_key": "a200_it240",
+          "id_key": "a200_it240"
+        },
+        "a80_off1e4": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "variant_dir": "off_1e4"
+        },
+        "a80_off5e4": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "variant_dir": "off_5e4"
+        },
+        "a80_winm2": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "variant_dir": "off_m2"
+        },
+        "a80_winp2": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "variant_dir": "off_p2"
+        },
+        "a80_Kmedian": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "K_flagged_to_median": true
+        },
+        "a80_Kclip5": {
+          "source_key": "a80_it240",
+          "id_key": "a80_it240",
+          "K_upper_bound": 5.0
+        }
+      },
+      "sigma0_mpa": 172.3
+    }
+  },
+  "case_families": [
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        20,
+        10,
+        5
+      ],
+      "n_inc": 20,
+      "table": "g200"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 40,
+      "table": "g200",
+      "suffix": "n40"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 20,
+      "table": "g500",
+      "suffix": "g500"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "homogeneous"
+      ],
+      "factors": [
+        20,
+        10
+      ],
+      "n_inc": 20,
+      "table": "g200"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B_a10",
+        "B_a20",
+        "B_a50",
+        "B_a80",
+        "B_a150",
+        "B_a200",
+        "B_a500"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 20,
+      "table": "g200"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B_censor255",
+        "B_censorEl",
+        "B_Kmedian",
+        "B_Kclip5",
+        "B_autowin",
+        "B_frame",
+        "B_off1e4",
+        "B_off5e4",
+        "B_winm2",
+        "B_winp2"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 20,
+      "table": "g200"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        10,
+        5
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "bc": "semiaxial",
+      "suffix": "semiaxial"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        10,
+        5
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "bc": "uniaxial",
+      "suffix": "uniaxial"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset2",
+      "materials": [
+        "a80"
+      ],
+      "factors": [
+        20,
+        10,
+        5
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "suffix": "crop"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset2",
+      "materials": [
+        "a1",
+        "a10",
+        "a20",
+        "a50",
+        "a100",
+        "a150",
+        "a200",
+        "homogeneous"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "suffix": "crop"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset2",
+      "materials": [
+        "a80"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 40,
+      "table": "g200",
+      "suffix": "crop_n40"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset2",
+      "materials": [
+        "a80"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 20,
+      "table": "g500",
+      "suffix": "crop_g500"
+    },
+    {
+      "stage": "coarse",
+      "dataset": "dataset2",
+      "materials": [
+        "a80_frame",
+        "a80_off1e4",
+        "a80_off5e4",
+        "a80_winm2",
+        "a80_winp2",
+        "a80_Kmedian",
+        "a80_Kclip5"
+      ],
+      "factors": [
+        10
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "suffix": "crop"
+    },
+    {
+      "stage": "full",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        2
+      ],
+      "n_inc": 20,
+      "table": "g200"
+    },
+    {
+      "stage": "full",
+      "dataset": "dataset1",
+      "materials": [
+        "homogeneous"
+      ],
+      "factors": [
+        1
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "ref_force_tol": 1e-06
+    },
+    {
+      "stage": "full",
+      "dataset": "dataset2",
+      "materials": [
+        "a80"
+      ],
+      "factors": [
+        2,
+        1
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "suffix": "crop"
+    },
+    {
+      "stage": "full",
+      "dataset": "dataset2",
+      "materials": [
+        "a50",
+        "a100"
+      ],
+      "factors": [
+        1
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "suffix": "crop"
+    },
+    {
+      "stage": "full",
+      "dataset": "dataset1",
+      "materials": [
+        "B"
+      ],
+      "factors": [
+        1
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "ref_force_tol": 1e-06
+    },
+    {
+      "stage": "full",
+      "dataset": "dataset2",
+      "materials": [
+        "homogeneous"
+      ],
+      "factors": [
+        1
+      ],
+      "n_inc": 20,
+      "table": "g200",
+      "suffix": "crop"
+    }
+  ],
+  "field_geometry": {
+    "dataset1": {
+      "field_shape": [
+        3600,
+        3100
+      ],
+      "crop_offset": [
+        0,
+        0
+      ]
+    },
+    "dataset2": {
+      "field_shape": [
+        1880,
+        1700
+      ],
+      "crop_offset": [
+        0,
+        2
+      ]
+    }
+  },
+  "adopted_cases": {
+    "note": "none: the Dataset 2 homogeneous full-resolution case is solved in this campaign",
+    "source": "",
+    "cases": [],
+    "rename": {}
+  },
+  "resources": {
+    "dataset1": {
+      "1": {
+        "cpus": 32,
+        "mem": "360G",
+        "time": "48:00:00",
+        "partition": "bigmem"
+      },
+      "2": {
+        "cpus": 24,
+        "mem": "300G",
+        "time": "36:00:00",
+        "partition": "32c3,24c3,bigmem",
+        "fallback_partition": "bigmem"
+      },
+      "5": {
+        "cpus": 16,
+        "mem": "96G",
+        "time": "12:00:00",
+        "partition": "32c3,24c3,bigmem"
+      },
+      "10": {
+        "cpus": 8,
+        "mem": "32G",
+        "time": "04:00:00"
+      },
+      "20": {
+        "cpus": 8,
+        "mem": "16G",
+        "time": "02:00:00"
+      }
+    },
+    "dataset2": {
+      "5": {
+        "cpus": 16,
+        "mem": "48G",
+        "time": "06:00:00",
+        "partition": "32c3,24c3,bigmem"
+      },
+      "10": {
+        "cpus": 8,
+        "mem": "24G",
+        "time": "03:00:00"
+      },
+      "20": {
+        "cpus": 8,
+        "mem": "16G",
+        "time": "02:00:00"
+      },
+      "1": {
+        "cpus": 32,
+        "mem": "220G",
+        "time": "48:00:00",
+        "partition": "32c3,24c3,bigmem",
+        "fallback_partition": "bigmem"
+      },
+      "2": {
+        "cpus": 24,
+        "mem": "128G",
+        "time": "24:00:00",
+        "partition": "32c3,24c3,bigmem",
+        "fallback_partition": "bigmem"
+      }
+    }
+  },
+  "meso": {
+    "note": "Dataset 1 mesoscale: frozen 2026-09-22 geometry, corrected majority face-to-region mapping and DIC boundary data; materials rebuilt from the method-B maps of the production key (meso/build_materials.py, validated to reproduce every frozen T075 array); graded table and solver settings of the pixel-scale campaign",
+    "id_key": "a100_it240",
+    "variant_dir": "off_stress",
+    "E_mpa": 193397.86038269,
+    "nu": 0.3,
+    "n_exp": 0.4164,
+    "k_scale_mpa": 461.8,
+    "k_macro_mpa": 461.8,
+    "homogeneous": [
+      169.71,
+      461.8
+    ],
+    "table": "g200",
+    "n_inc": 20,
+    "max_nr": 15,
+    "nr_tol": 1e-06,
+    "snapshot_fractions": [
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "dic_reference_U_sha256": "0127946c898d110b06efb07440e9226aa61690ca4a11acc97359ac650848bc6b",
+    "resources": {
+      "build": {
+        "cpus": 2,
+        "mem": "24G",
+        "time": "01:00:00",
+        "partition": "32c3,24c3,bigmem"
+      },
+      "moderate": {
+        "cpus": 8,
+        "mem": "48G",
+        "time": "06:00:00",
+        "partition": "32c3,24c3,bigmem"
+      },
+      "fine": {
+        "cpus": 16,
+        "mem": "96G",
+        "time": "12:00:00",
+        "partition": "32c3,24c3,bigmem"
+      }
+    },
+    "cases": [
+      {
+        "id": "id_mnt",
+        "group": "primary",
+        "mesh": "moderate_no_twins",
+        "law": "dic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "id_fnt",
+        "group": "primary",
+        "mesh": "fine_no_twins",
+        "law": "dic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "id_mt",
+        "group": "primary",
+        "mesh": "moderate_twins",
+        "law": "dic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "id_ft",
+        "group": "primary",
+        "mesh": "fine_twins",
+        "law": "dic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hp_mnt",
+        "group": "primary",
+        "mesh": "moderate_no_twins",
+        "law": "hp_kmacro",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hp_fnt",
+        "group": "primary",
+        "mesh": "fine_no_twins",
+        "law": "hp_kmacro",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hp_mt",
+        "group": "primary",
+        "mesh": "moderate_twins",
+        "law": "hp_kmacro",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hp_ft",
+        "group": "primary",
+        "mesh": "fine_twins",
+        "law": "hp_kmacro",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hyb_mnt",
+        "group": "primary",
+        "mesh": "moderate_no_twins",
+        "law": "hp_kdic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hyb_fnt",
+        "group": "primary",
+        "mesh": "fine_no_twins",
+        "law": "hp_kdic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hyb_mt",
+        "group": "primary",
+        "mesh": "moderate_twins",
+        "law": "hp_kdic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hyb_ft",
+        "group": "primary",
+        "mesh": "fine_twins",
+        "law": "hp_kdic",
+        "space": "hetero",
+        "bc": "dic"
+      },
+      {
+        "id": "hom_dic_mnt",
+        "group": "boundary_control",
+        "mesh": "moderate_no_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "dic"
+      },
+      {
+        "id": "hom_dic_fnt",
+        "group": "boundary_control",
+        "mesh": "fine_no_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "dic"
+      },
+      {
+        "id": "hom_dic_mt",
+        "group": "boundary_control",
+        "mesh": "moderate_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "dic"
+      },
+      {
+        "id": "hom_dic_ft",
+        "group": "boundary_control",
+        "mesh": "fine_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "dic"
+      },
+      {
+        "id": "hom_edge_mnt",
+        "group": "boundary_control",
+        "mesh": "moderate_no_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "edge_mean"
+      },
+      {
+        "id": "hom_edge_fnt",
+        "group": "boundary_control",
+        "mesh": "fine_no_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "edge_mean"
+      },
+      {
+        "id": "hom_edge_mt",
+        "group": "boundary_control",
+        "mesh": "moderate_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "edge_mean"
+      },
+      {
+        "id": "hom_edge_ft",
+        "group": "boundary_control",
+        "mesh": "fine_twins",
+        "law": "dic",
+        "space": "homog",
+        "bc": "edge_mean"
+      },
+      {
+        "id": "pixel_ft",
+        "group": "pixel_material_control",
+        "mesh": "fine_twins",
+        "law": "pixel",
+        "space": "element",
+        "bc": "dic"
+      },
+      {
+        "id": "id_mt_g500",
+        "group": "numerical_check",
+        "mesh": "moderate_twins",
+        "law": "dic",
+        "space": "hetero",
+        "bc": "dic",
+        "table": "g500"
+      },
+      {
+        "id": "id_mt_n40",
+        "group": "numerical_check",
+        "mesh": "moderate_twins",
+        "law": "dic",
+        "space": "hetero",
+        "bc": "dic",
+        "n_inc": 40
+      }
+    ]
+  },
+  "solver_accepted_sha256": {
+    "167527b5c7d6a47a71a815c8afe403e887fac12ecc5d61199d46a3f359a9f9fb": "original file, all cases of the first submission",
+    "f68f3bba00e82781047b67adc16e548849eb4846198cf87a42df9d47e00afb97": "adds the optional ref_force_tol criterion (default 0 = identical behaviour); used by the Dataset 1 full-resolution cases, whose residual after an exact elastic predictor sits at the 1e-9 round-off floor of 22.3 million equations"
+  },
+  "ref_force_tol_note": "Dataset 1 factor 1: |R_free| < 1e-6 |reaction forces| accepted in addition to |R| < 1e-9 or rel < 1e-6"
+}

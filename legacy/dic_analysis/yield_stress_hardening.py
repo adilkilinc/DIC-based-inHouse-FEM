@@ -36,10 +36,9 @@ plt.ion()
 # ============================================================
 
 # --- Paths -----------------------------------------------------------------
-FOLDER_U = r"C:\Users\adil.kilinc\Desktop\Thesis\3_data\21_DIC\U_a100"
-FOLDER_V = r"C:\Users\adil.kilinc\Desktop\Thesis\3_data\21_DIC\V_a100"
-OUT_DIR = (r"C:\Users\adil.kilinc\Desktop\Thesis\3_data"
-           r"\27_yield_hardening_Adil\Main_a100")
+FOLDER_U = os.path.join("data", "21_DIC", "U_a100")
+FOLDER_V = os.path.join("data", "21_DIC", "V_a100")
+OUT_DIR = os.path.join("data", "27_yield_hardening", "Main_a100")
 
 # --- Material properties ---------------------------------------------------
 E = 205000.0    # Young's modulus [MPa]

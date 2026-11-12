@@ -30,12 +30,12 @@ import numpy as np
 # exposed by a locally built OpenCV. Set USE_CUSTOM_OPENCV = False to fall back
 # to the pip-installed cv2.
 USE_CUSTOM_OPENCV = True
-OPENCV_LIB_DIR = r"C:\Users\adil.kilinc\opencv\build\lib\python3"
-OPENCV_BIN_DIR = r"C:\Users\adil.kilinc\opencv\build\bin"
+OPENCV_LIB_DIR = os.path.join("opencv", "build", "lib", "python3")
+OPENCV_BIN_DIR = os.path.join("opencv", "build", "bin")
 OPENCV_PYD_NAME = "cv2.cp312-win_amd64.pyd"
 
 # --- Data paths ------------------------------------------------------------
-MAIN_PATH = r"C:\Users\adil.kilinc\Desktop\Thesis\3_data\21_DIC"
+MAIN_PATH = os.path.join("data", "21_DIC")
 REF_IMAGE = os.path.join(MAIN_PATH, "ref.tif")
 MASK_IMAGE = os.path.join(MAIN_PATH, "mask.png")
 TRACTION_DIR = os.path.join(MAIN_PATH, "traction")

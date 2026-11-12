@@ -21,7 +21,7 @@ Run it either way:
 Every CONFIG entry has a matching ``--flag``; anything not passed falls back to
 the value set here, so the file stays runnable as-is from an IDE.
 
-Part of: DIC-based in-house FEM (https://github.com/kilincadil/DIC-based-inHouse-FEM)
+Part of: DIC-based in-house FEM (https://github.com/adilkilinc/DIC-based-inHouse-FEM)
 """
 
 import argparse

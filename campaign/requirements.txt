@@ -1,0 +1,8 @@
+numpy
+scipy
+numba
+joblib
+opencv-python-headless==4.13.0
+triangle
+psutil
+pypardiso

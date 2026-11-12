@@ -5,7 +5,7 @@ Array helpers shared by the .inp generation drivers.
 Everything here operates on ``[i, j]`` arrays with ``i`` along x and ``j``
 along y, the convention used throughout :mod:`inp_writer`.
 
-Part of: DIC-based in-house FEM (https://github.com/kilincadil/DIC-based-inHouse-FEM)
+Part of: DIC-based in-house FEM (https://github.com/adilkilinc/DIC-based-inHouse-FEM)
 """
 
 import numpy as np

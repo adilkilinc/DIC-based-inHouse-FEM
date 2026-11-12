@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-@author: akilinc
-
 fem_pixel.py  –  Pure-Python FEM replacing Abaqus (Case 5 / Case 6)
 ====================================================================
 Element  : CPS4, plane stress, 2x2 Gauss
@@ -28,9 +26,73 @@ Usage:
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import spsolve, splu
+import os
+import sys
 import time
-import functools
-print = functools.partial(print, flush=True)   # live progress under runners
+
+# ── run log ─────────────────────────────────────────────────────────────────
+# Everything this module reports is mirrored to a log file so a run can be
+# diagnosed AFTERWARDS - the Newton history, cutbacks and line-search steps are
+# otherwise only on screen and lost. The trace is written to the log even when
+# verbose=False, because a driver that runs quiet is exactly the one whose
+# behaviour you cannot inspect later.
+#
+# ONE file per process, appended across calls, so a driver that solves many
+# tiles produces one log rather than hundreds.
+#
+#   FEM_LOG=0            disable entirely
+#   FEM_LOG_FILE=<path>  write exactly there
+#   FEM_LOG_DIR=<dir>    write <dir>/fem_pixel_<stamp>_pid<pid>.log
+#   (default)            ./fem_logs/fem_pixel_<stamp>_pid<pid>.log
+_LOG_NAME = "fem_pixel"
+_LOG_FH = None
+_LOG_OFF = False
+
+
+def log_path():
+    """Path this process is logging to, or None when logging is off."""
+    return getattr(_LOG_FH, "name", None)
+
+
+def _open_log():
+    global _LOG_FH, _LOG_OFF
+    if _LOG_FH is not None or _LOG_OFF:
+        return
+    if os.environ.get("FEM_LOG", "1") == "0":
+        _LOG_OFF = True
+        return
+    p = os.environ.get("FEM_LOG_FILE")
+    if not p:
+        d = os.environ.get("FEM_LOG_DIR") or os.path.join(os.getcwd(), "fem_logs")
+        p = os.path.join(d, "%s_%s_pid%d.log" % (
+            _LOG_NAME, time.strftime("%Y%m%d_%H%M%S"), os.getpid()))
+    try:
+        d = os.path.dirname(os.path.abspath(p))
+        if d:
+            os.makedirs(d, exist_ok=True)
+        _LOG_FH = open(p, "a", buffering=1)
+    except OSError as ex:
+        _LOG_OFF = True
+        sys.stderr.write("[%s] logging disabled, cannot open %s (%s)\n"
+                         % (_LOG_NAME, p, ex))
+
+
+def print(*args, sep=" ", end="\n", flush=True):        # noqa: A001
+    """stdout exactly as before, plus the run log when one is open."""
+    msg = sep.join(str(a) for a in args) + end
+    sys.stdout.write(msg)
+    if flush:
+        sys.stdout.flush()
+    if _LOG_FH is not None:
+        _LOG_FH.write(msg)
+
+
+def _trace(msg, echo=True):
+    """Always to the run log; to stdout only when the caller asked to see it."""
+    if echo:
+        print(msg)
+    elif _LOG_FH is not None:
+        _LOG_FH.write(msg + "\n")
 
 # Optional fast multithreaded direct solver (MKL Pardiso).
 #   pip install pypardiso
@@ -83,13 +145,24 @@ def _Cps(E,nu):
 # 'tabular' : piecewise-linear interpolation of ep^n at the same 50 knots that
 #             Case5/generate_mesh write into the .inp (E_p=linspace(0,0.2,50)),
 #             perfectly plastic beyond the last knot — exactly what Abaqus solves.
-def make_hardening(n_exp, mode='ludwik', ep_max=0.2, n_pts=50):
+# 'graded'  : piecewise-linear interpolation of ep^n at the knots
+#             {0} U logspace(ep_first, ep_max, n_pts-1): constant relative knot
+#             spacing, finite first-segment slope ep_first^(n-1) instead of the
+#             singular analytic slope at ep=0, perfectly plastic beyond ep_max.
+#             Deviation from ep^n below ep_first is at most 0.48*ep_first^n.
+def make_hardening(n_exp, mode='ludwik', ep_max=0.2, n_pts=50, ep_first=1e-6):
     if mode == 'ludwik':
         def hf(ep):  return np.where(ep>0, np.maximum(ep,0.)**n_exp, 0.)
         def hfp(ep): return n_exp*np.where(ep>1e-15, ep**(n_exp-1.), 0.)
         return hf, hfp
-    elif mode == 'tabular':
-        ep_k = np.linspace(0., ep_max, n_pts)
+    elif mode in ('tabular', 'graded'):
+        if mode == 'tabular':
+            ep_k = np.linspace(0., ep_max, n_pts)
+        else:
+            if not (0. < ep_first < ep_max) or n_pts < 3:
+                raise ValueError("graded table needs 0 < ep_first < ep_max, n_pts >= 3")
+            ep_k = np.concatenate([[0.], np.logspace(np.log10(ep_first),
+                                                     np.log10(ep_max), n_pts-1)])
         f_k  = np.where(ep_k>0, ep_k**n_exp, 0.)
         sl   = np.diff(f_k)/np.diff(ep_k)
         def hf(ep):
@@ -269,25 +342,43 @@ def _Fint(mesh,sig,Bs,dJs,ld):
 def run_fem(disp_x,disp_y,yield_map,K_map,n_exp,
             x_size,y_size,element_size,scale_factor,
             E_mod=205000.,nu=0.3,N_inc=20,max_nr=15,nr_tol=1e-6,
-            hardening='ludwik',ep_table_max=0.2,n_table=50,
-            snapshot_fractions=None,
+            hardening='ludwik',ep_table_max=0.2,n_table=50,ep_table_first=1e-6,
+            snapshot_fractions=None,ref_force_tol=0.0,
             verbose=True):
     """
     hardening : 'ludwik'  – analytic sy = sy0 + K*ep^n
                 'tabular' – piecewise-linear 50-pt table clamped at ep_table_max
                             (matches the *Plastic table Abaqus interpolates)
+                'graded'  – piecewise-linear table, knots 0 and n_table-1
+                            log-spaced points from ep_table_first to ep_table_max
     snapshot_fractions : optional list of load fractions in (0,1]; the S/E/PEEQ
                 fields at those pseudo-times are recorded during ONE incremental
                 solve and returned in result['frames'] = {fraction: {...}}.
                 (Replaces re-solving the whole problem per load level.)
     """
     t0=time.time()
-    hf,hfp=make_hardening(n_exp,hardening,ep_table_max,n_table)
+    hf,hfp=make_hardening(n_exp,hardening,ep_table_max,n_table,ep_table_first)
     mesh=_Mesh(x_size,y_size,element_size,scale_factor)
     nx,ny=mesh.nx,mesh.ny; nxn,nyn=nx+1,ny+1; n_e=mesh.n_elems
 
-    if verbose:
-        print(f"[FEM] {nx}x{ny} elems | {len(mesh.dofs_free)} free DOFs | solver: {_SOLVER_NAME}")
+    _open_log()
+    _trace("\n" + "="*76, verbose)
+    _trace(f"[run] fem_pixel  {time.strftime('%Y-%m-%d %H:%M:%S')}", verbose)
+    _trace(f"[run] mesh      {nx}x{ny} CPS4 = {n_e} elems, "
+           f"{len(mesh.dofs_free)} free of {mesh.n_dof} DOFs", verbose)
+    _trace(f"[run] element   {element_size} x scale {scale_factor}  "
+           f"domain {x_size} x {y_size}", verbose)
+    _trace(f"[run] material  E={E_mod} nu={nu} n={n_exp} hardening={hardening}"
+           + (f" (table 0..{ep_table_max}, {n_table} pts)"
+              if hardening=='tabular' else "")
+           + (f" (table 0,{ep_table_first:g}..{ep_table_max:g} log, {n_table} pts)"
+              if hardening=='graded' else ""), verbose)
+    _trace(f"[run] stepping  N_inc={N_inc} max_nr={max_nr} nr_tol={nr_tol}"
+           + (f" ref_force_tol={ref_force_tol}" if ref_force_tol>0 else ""), verbose)
+    _trace(f"[run] solver    {_SOLVER_NAME}", verbose)
+    if _LOG_FH is not None and verbose:
+        print(f"[run] log       {_LOG_FH.name}")
+    _trace("="*76, verbose)
 
     # element->grid output helpers (also used for snapshots)
     def gm(a): return a.mean(axis=1)
@@ -336,14 +427,22 @@ def run_fem(disp_x,disp_y,yield_map,K_map,n_exp,
 
     # Incremental loading with automatic cutback (Abaqus-style):
     # pseudo-time t: 0 -> 1, initial/maximum step 1/N_inc, halved on failure.
-    t=0.; dt=1./N_inc; dt_max=1./N_inc; dt_min=dt_max/1024.
+    # dt_nat is the *natural* (adaptive) step size. The step actually taken,
+    # dt, may be clipped short so the increment lands exactly on a snapshot
+    # fraction - but dt_nat is never overwritten by that clipped value.
+    # (If it were, the 1.5x growth would restart from the clipped remainder and
+    # need dozens of increments to recover; with closely spaced
+    # snapshot_fractions that inflated the increment count ~2.7x.)
+    t=0.; dt_nat=1./N_inc; dt_max=1./N_inc; dt_min=dt_max/1024.
     inc=0
+    n_nr=0; n_cutback=0; n_grow=0     # logged diagnostics, also returned
     snaps={}
     pending=sorted(snapshot_fractions) if snapshot_fractions else []
     while t<1.-1e-12:
-        dt=min(dt,1.-t)
-        if pending:                      # land exactly on snapshot fractions
-            dt=min(dt,max(pending[0]-t,1e-12))
+        dt=min(dt_nat,1.-t)
+        snap_hit=False
+        if pending and pending[0]-t<dt:  # land exactly on snapshot fractions
+            dt=max(pending[0]-t,1e-14); snap_hit=True
         inc+=1
         du_B=u_bc[dof_B]*dt
         u_save=u.copy()
@@ -358,6 +457,7 @@ def run_fem(disp_x,disp_y,yield_map,K_map,n_exp,
         sf_acc=sig.copy(); dp_acc=np.zeros_like(eps_p)
         ep_new=ep_bar.copy()
         converged=False
+        res_prev=None
 
         for nrit in range(max_nr):
             u_e   =u[ld]
@@ -381,11 +481,22 @@ def run_fem(disp_x,disp_y,yield_map,K_map,n_exp,
             if not np.isfinite(res): break          # diverged -> cutback
             if nrit==0: res0=max(res,1e-30)
             rel=res/res0
-            if verbose:
-                print(f"  inc {inc:3d} t={t+dt:.4f} NR {nrit+1:2d} |R|={res:.2e} rel={rel:.2e}")
+            n_nr+=1
+            grew = res_prev is not None and res>res_prev
+            if grew: n_grow+=1
+            res_prev=res
+            _trace(f"  inc {inc:3d} t={t+dt:.4f} NR {nrit+1:2d} "
+                   f"|R|={res:.2e} rel={rel:.2e}" + ("  [residual grew]" if grew else ""),
+                   verbose)
 
-            # Converge on absolute OR relative residual
-            if res<1e-10 or rel<nr_tol:
+            # Converge on absolute OR relative residual.  ref_force_tol > 0 adds
+            # |R_free| < ref_force_tol * |reaction forces|: at 22 million
+            # equations the round-off floor of |R_free| reaches the fixed 1e-9,
+            # and an exact elastic predictor can then never be accepted.
+            # Default 0 leaves the criterion unchanged.
+            if res<1e-9 or rel<nr_tol:
+                converged=True; break
+            if ref_force_tol>0 and res<ref_force_tol*np.linalg.norm(R[dof_B]):
                 converged=True; break
 
             # Build consistent tangent stiffness
@@ -412,28 +523,35 @@ def run_fem(disp_x,disp_y,yield_map,K_map,n_exp,
             u[dof_I]+=du
 
         if not converged:
-            u=u_save; dt*=0.5
-            if verbose:
-                print(f"  inc {inc:3d}: no convergence, cutback dt -> {dt:.2e}")
+            u=u_save; dt_nat=0.5*dt; dt=dt_nat
+            n_cutback+=1
+            _trace(f"  inc {inc:3d}: no convergence in {max_nr} iters, "
+                   f"CUTBACK dt -> {dt:.2e}", verbose)
             if dt<dt_min:
                 raise RuntimeError("run_fem: increment cutback below minimum "
                                    f"({dt:.2e}) - solution not converging")
             continue
 
         eps_p+=dp_acc; ep_bar=ep_new; sig=sf_acc
-        t+=dt
-        dt=min(dt*1.5,dt_max)   # grow back after success
+        t=pending[0] if snap_hit else t+dt   # exact landing, no float residue
+        dt_nat=min(dt_nat*1.5,dt_max)        # grow the NATURAL step, not the clipped one
 
         # record snapshot fields at requested load fractions (element fields
         # + nodal U, so a stress/strain/u2 - "time" curve can be built later
         # without re-solving; same nodal-reshape as the final-state U below)
-        while pending and t>=pending[0]-1e-9:
+        while pending and t>=pending[0]-1e-12:
             fsnap=pending.pop(0)
             Usnap=np.zeros((nxn,nyn,2))
             Usnap[...,0]=u[2*nd_all].reshape(nxn,nyn)
             Usnap[...,1]=u[2*nd_all+1].reshape(nxn,nyn)
+            # RF at prescribed DOFs from converged internal forces
+            F_snap=_Fint(mesh,sig,Bs,dJs,ld)
+            bcm=np.zeros(mesh.n_dof,dtype=bool); bcm[dof_B]=True
+            RFsnap=np.zeros((nxn,nyn,2))
+            RFsnap[...,0]=np.where(bcm[2*nd_all],F_snap[2*nd_all],0.).reshape(nxn,nyn)
+            RFsnap[...,1]=np.where(bcm[2*nd_all+1],F_snap[2*nd_all+1],0.).reshape(nxn,nyn)
             snaps[fsnap]=dict(S=tg(gm(sig)), E=tg(gm(eps_tot)), PEEQ=tg(gm(ep_bar)),
-                              U=Usnap)
+                              PE=tg(gm(eps_p)), U=Usnap, RF=RFsnap)
             if verbose:
                 print(f"[FEM] snapshot recorded at load fraction {fsnap:.3f}")
 
@@ -448,13 +566,22 @@ def run_fem(disp_x,disp_y,yield_map,K_map,n_exp,
     RF[...,0]=np.where(bc_m[2*nd_all],F_all[2*nd_all],0.).reshape(nxn,nyn)
     RF[...,1]=np.where(bc_m[2*nd_all+1],F_all[2*nd_all+1],0.).reshape(nxn,nyn)
 
-    if verbose:
-        print(f"\n[FEM] done {time.time()-t0:.1f}s  "
-              f"PEEQ_max={ep_bar.max():.4f}  "
-              f"svm_max={_vm(sig.reshape(-1,3)).max():.1f}MPa")
+    wall=time.time()-t0
+    _trace("-"*76, verbose)
+    _trace(f"[run] done {wall:.1f}s  increments={inc}  newton_iters={n_nr}  "
+           f"cutbacks={n_cutback}  residual_growth={n_grow}", verbose)
+    _trace(f"[run] PEEQ_max={ep_bar.max():.6f}  "
+           f"svm_max={_vm(sig.reshape(-1,3)).max():.2f} MPa  "
+           f"plastic={100.0*(ep_bar>0).mean():.2f}%", verbose)
+    # one machine-readable line, so a sweep can grep instead of parse
+    _trace(f"[csv] fem_pixel,{nx},{ny},{n_e},{N_inc},{inc},{n_nr},{n_cutback},"
+           f"{n_grow},{wall:.2f}", verbose)
+    _trace("="*76, verbose)
     return dict(U=U, S=tg(gm(sig)), E=tg(gm(eps_tot)),
                 PE=tg(gm(eps_p)), PEEQ=tg(gm(ep_bar)), RF=RF, mesh=mesh,
-                frames=snaps)
+                frames=snaps,
+                n_inc=inc, n_nr=n_nr, n_cutback=n_cutback, n_res_growth=n_grow,
+                wall_s=wall, log_file=log_path())
 
 
 # ── Verification: equal biaxial tension (self-consistent BCs) ───────────────

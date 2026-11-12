@@ -25,7 +25,7 @@ Outputs, all shaped ``[frame, x, y]`` and named after the ODB:
 ``rf_total`` holds the summed RF1 and RF2 over the four prescribed edges, in
 the order bottom, top, left, right.
 
-Part of: DIC-based in-house FEM (https://github.com/kilincadil/DIC-based-inHouse-FEM)
+Part of: DIC-based in-house FEM (https://github.com/adilkilinc/DIC-based-inHouse-FEM)
 """
 
 import os
